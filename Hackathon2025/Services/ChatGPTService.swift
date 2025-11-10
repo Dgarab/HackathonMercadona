@@ -138,7 +138,12 @@ final class ChatGPTService: AIService {
                 throw ChatGPTError.invalidResponse
             }
             
-            return firstChoice.message.content.trimmingCharacters(in: .whitespacesAndNewlines)
+            // Limpiar el texto: eliminar asteriscos de markdown
+            let cleanedContent = firstChoice.message.content
+                .replacingOccurrences(of: "**", with: "")
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            
+            return cleanedContent
             
         } catch let error as ChatGPTError {
             throw error
@@ -153,11 +158,6 @@ final class ChatGPTService: AIService {
         dayOfWeek: String,
         purchaseHistory: [String]
     ) -> String {
-        let dayContext = dayOfWeek.isEmpty ? "" : """
-        
-        DÍA DE LA SEMANA: \(dayOfWeek)
-        """
-        
         let basketContext = currentBasket.isEmpty ? "" : """
         
         CARRITO ACTUAL:
@@ -188,12 +188,12 @@ final class ChatGPTService: AIService {
         MISIÓN PRINCIPAL
         Anticiparte a las necesidades del cliente analizando en tiempo real:
         - Histórico de compras: Productos comprados anteriormente, frecuencias y patrones
-        - Día de la semana: Contexto temporal que influye en necesidades
+        - Patrones semanales: Contexto temporal que influye en necesidades según el día de la semana
         - Carrito actual: Productos que el cliente está comprando AHORA mismo
 
         Tu objetivo es sugerir productos relevantes que el cliente probablemente necesita pero aún no ha añadido al carrito.
 
-        CONTEXTO ACTUAL:\(dayContext)\(basketContext)\(historyContext)\(productsContext)
+        CONTEXTO ACTUAL:\(basketContext)\(historyContext)\(productsContext)
 
         LÓGICA DE PREDICCIÓN
 
@@ -265,11 +265,12 @@ final class ChatGPTService: AIService {
         Eres como esa amiga que conoce perfectamente tus gustos y te recuerda: "¿No llevabas también...?" 💡
 
         INSTRUCCIONES ESPECÍFICAS:
-        - Analiza el carrito actual y el día de la semana para hacer sugerencias inteligentes
+        - Analiza el carrito actual para hacer sugerencias inteligentes basándote en patrones históricos
         - Si el carrito está vacío o casi vacío, saluda y explica tu función
         - Si hay productos en el carrito, sugiere complementos o productos faltantes basándote en patrones
         - Si es el final de la compra (muchos productos), haz una revisión final de básicos ausentes
         - Responde de forma natural y conversacional, como una amiga que conoce los hábitos del cliente
+        - NO menciones el día específico de la semana en tus respuestas
         """
     }
 }
