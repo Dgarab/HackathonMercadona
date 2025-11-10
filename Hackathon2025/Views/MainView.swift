@@ -7,10 +7,10 @@ struct MainView: View {
                 .tabItem { Label("Catálogo", systemImage: "bag") }
 
             MercAI()
-                .tabItem { Label("Cora", systemImage: "calendar") }
+                .tabItem { Label("Cora", systemImage: "brain.head.profile") }
 
             SmartPath()
-                .tabItem { Label("SmartPath", systemImage: "books.vertical") }
+                .tabItem { Label("SmartPath", systemImage: "point.topright.arrow.triangle.backward.to.point.bottomleft.scurvepath.fill") }
         }
     }
 }
