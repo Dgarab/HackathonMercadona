@@ -47,7 +47,9 @@ private struct ChatContentView: View {
 							ScrollView(.horizontal, showsIndicators: false) {
 								HStack(spacing: 12) {
 									ForEach(viewModel.suggestedProducts) { product in
-										ProductCard(product: product)
+										ProductCard(product: product, onAddToCart: {
+											viewModel.addProductToCart(product)
+										})
 									}
 								}
 								.padding(.horizontal)
@@ -84,12 +86,33 @@ private struct ChatContentView: View {
 			}
 			
 			HStack(spacing: 8) {
+				// Botón para añadir imágenes
+				Button {
+					// TODO: Implementar selector de imágenes
+				} label: {
+					Image(systemName: "plus.circle.fill")
+						.font(.system(size: 24, weight: .medium))
+						.foregroundStyle(.blue)
+				}
+				.disabled(viewModel.isProcessing)
+				
 				TextField("Pregunta por productos, ofertas, etc.", text: $viewModel.inputText)
 					.textFieldStyle(.roundedBorder)
 					.disabled(viewModel.isProcessing)
 					.onSubmit {
 						Task { await viewModel.send() }
 					}
+				
+				// Botón para enviar audio
+				Button {
+					// TODO: Implementar grabación de audio
+				} label: {
+					Image(systemName: "mic.circle.fill")
+						.font(.system(size: 24, weight: .medium))
+						.foregroundStyle(.green)
+				}
+				.disabled(viewModel.isProcessing)
+				
 				Button {
 					Task { await viewModel.send() }
 				} label: {
@@ -135,6 +158,8 @@ private struct MessageRow: View {
 
 private struct ProductCard: View {
 	let product: Product
+	let onAddToCart: () -> Void
+	@State private var isPressed = false
 
 	var body: some View {
 		VStack(spacing: 8) {
@@ -156,6 +181,34 @@ private struct ProductCard: View {
 			Text(formattedPrice(product.priceCents))
 				.font(.footnote).bold()
 				.foregroundStyle(.green)
+			
+			Button {
+				withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+					isPressed = true
+				}
+				onAddToCart()
+				DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+					withAnimation {
+						isPressed = false
+					}
+				}
+			} label: {
+				HStack(spacing: 4) {
+					Image(systemName: "cart.badge.plus")
+						.font(.system(size: 12, weight: .semibold))
+					Text("Añadir")
+						.font(.system(size: 11, weight: .semibold))
+				}
+				.foregroundStyle(.white)
+				.padding(.horizontal, 12)
+				.padding(.vertical, 6)
+				.background(
+					Capsule()
+						.fill(Color.orange)
+				)
+				.scaleEffect(isPressed ? 0.9 : 1.0)
+			}
+			.buttonStyle(.plain)
 		}
 		.padding(8)
 		.background(RoundedRectangle(cornerRadius: 12).stroke(Color.gray.opacity(0.2)))
