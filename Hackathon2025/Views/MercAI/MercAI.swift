@@ -2,75 +2,105 @@ import SwiftUI
 import Combine
 import SwiftData
 
-struct MercAI: View {
+	struct MercAI: View {
 	@Environment(\.modelContext) private var modelContext
 	@StateObject private var viewModelHolder = ViewModelHolder()
 
 	var body: some View {
 		NavigationStack {
-			VStack(spacing: 0) {
-				ScrollView {
-					LazyVStack(alignment: .leading, spacing: 12) {
-						ForEach(viewModel.messages) { message in
-							MessageRow(message: message)
-								.padding(.horizontal)
+			Group {
+				if let viewModel = viewModelHolder.viewModel {
+					chatView(viewModel: viewModel)
+				} else {
+					Color.clear
+						.onAppear {
+							viewModelHolder.viewModel = MercAIViewModel(modelContext: modelContext)
 						}
-
-						if !viewModel.suggestedProducts.isEmpty {
-							VStack(alignment: .leading, spacing: 8) {
-								Text("Recomendaciones")
-									.font(.headline)
-								ScrollView(.horizontal, showsIndicators: false) {
-									HStack(spacing: 12) {
-										ForEach(viewModel.suggestedProducts) { product in
-											ProductCard(product: product)
-										}
-									}
-									.padding(.horizontal)
-								}
-							}
-							.padding(.top, 8)
-							.padding(.horizontal)
-						}
-					}
-					.padding(.top, 12)
 				}
+			}
+			.navigationTitle("Cora")
+		}
+	}
+	
+	@ViewBuilder
+	private func chatView(viewModel: MercAIViewModel) -> some View {
+		ChatContentView(viewModel: viewModel)
+	}
+}
 
-				HStack(spacing: 8) {
-					TextField("Pregunta por productos, ofertas, etc.", text: inputBinding)
-						.textFieldStyle(.roundedBorder)
-					Button {
-						Task { await viewModel.send() }
-					} label: {
-						Image(systemName: "paperplane.fill")
-							.font(.system(size: 16, weight: .semibold))
+private struct ChatContentView: View {
+	@ObservedObject var viewModel: MercAIViewModel
+	
+	var body: some View {
+		VStack(spacing: 0) {
+			ScrollView {
+				LazyVStack(alignment: .leading, spacing: 12) {
+					ForEach(viewModel.messages) { message in
+						MessageRow(message: message)
+							.padding(.horizontal)
 					}
-					.disabled(viewModel.inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+
+					if !viewModel.suggestedProducts.isEmpty {
+						VStack(alignment: .leading, spacing: 8) {
+							Text("Recomendaciones")
+								.font(.headline)
+							ScrollView(.horizontal, showsIndicators: false) {
+								HStack(spacing: 12) {
+									ForEach(viewModel.suggestedProducts) { product in
+										ProductCard(product: product)
+									}
+								}
+								.padding(.horizontal)
+							}
+						}
+						.padding(.top, 8)
+						.padding(.horizontal)
+					}
+				}
+				.padding(.top, 12)
+			}
+
+			if viewModel.isProcessing {
+				HStack {
+					ProgressView()
+						.padding(.trailing, 8)
+					Text("Pensando...")
+						.font(.footnote)
+						.foregroundStyle(.secondary)
 				}
 				.padding()
-				.background(.ultraThinMaterial)
 			}
-			.navigationTitle("MercAI")
-		}
-		.onAppear {
-			if viewModelHolder.viewModel == nil {
-				viewModelHolder.viewModel = MercAIViewModel(modelContext: modelContext)
+			
+			if let error = viewModel.errorMessage {
+				HStack {
+					Image(systemName: "exclamationmark.triangle.fill")
+						.foregroundStyle(.orange)
+					Text(error)
+						.font(.caption)
+						.foregroundStyle(.secondary)
+				}
+				.padding(.horizontal)
+				.padding(.vertical, 4)
 			}
+			
+			HStack(spacing: 8) {
+				TextField("Pregunta por productos, ofertas, etc.", text: $viewModel.inputText)
+					.textFieldStyle(.roundedBorder)
+					.disabled(viewModel.isProcessing)
+					.onSubmit {
+						Task { await viewModel.send() }
+					}
+				Button {
+					Task { await viewModel.send() }
+				} label: {
+					Image(systemName: "paperplane.fill")
+						.font(.system(size: 16, weight: .semibold))
+				}
+				.disabled(viewModel.isProcessing || viewModel.inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+			}
+			.padding()
+			.background(.ultraThinMaterial)
 		}
-	}
-
-	private var viewModel: MercAIViewModel {
-		if let vm = viewModelHolder.viewModel { return vm }
-		let vm = MercAIViewModel(modelContext: modelContext)
-		viewModelHolder.viewModel = vm
-		return vm
-	}
-
-	private var inputBinding: Binding<String> {
-		Binding(
-			get: { viewModel.inputText },
-			set: { viewModel.inputText = $0 }
-		)
 	}
 }
 

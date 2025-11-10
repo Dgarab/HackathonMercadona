@@ -7,7 +7,7 @@ struct MainView: View {
                 .tabItem { Label("Catálogo", systemImage: "bag") }
 
             MercAI()
-                .tabItem { Label("MercAI", systemImage: "calendar") }
+                .tabItem { Label("Cora", systemImage: "calendar") }
 
             SmartPath()
                 .tabItem { Label("SmartPath", systemImage: "books.vertical") }
